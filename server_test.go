@@ -13,7 +13,10 @@ func TestServer(t *testing.T) {
 
 	router := http.NewServeMux()
 	router.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		fmt.Fprint(writer, "root url")
+		fmt.Fprintln(writer, "root url")
+		fmt.Fprintln(writer, request.Method)
+		fmt.Fprintln(writer, request.RequestURI)
+		fmt.Fprintln(writer, request.Body)
 	})
 	router.HandleFunc("/login", func(writer http.ResponseWriter, request *http.Request) {
 		fmt.Fprint(writer, "login page")
