@@ -1,4 +1,4 @@
-package golang_web
+package main
 
 import (
 	"fmt"
@@ -22,6 +22,9 @@ func TestServer(t *testing.T) {
 		param := request.URL.Query()
 		name := param.Get("name")
 		fmt.Fprintf(writer, "login page %v", name)
+
+		hobbies := param["hobby"]
+		fmt.Fprintf(writer, "hobbies : %v", hobbies)
 	})
 	router.HandleFunc("/register", func(writer http.ResponseWriter, request *http.Request) {
 		fmt.Fprint(writer, "register page")
