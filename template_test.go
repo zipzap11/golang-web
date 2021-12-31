@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -25,7 +26,6 @@ func SimpleHtmlFile(writer http.ResponseWriter, request *http.Request) {
 	t.ExecuteTemplate(writer, "index.html", []string{"Template Success, Congratulations you are now one of nakama !!! yeayy", "second message"})
 }
 
-
 //go:embed templates/*.html
 var templates embed.FS
 
@@ -33,6 +33,7 @@ type Person struct {
 	Name string
 	Role string
 }
+
 func SimpleHtmlEmbed(writer http.ResponseWriter, request *http.Request) {
 	t := template.Must(template.ParseFS(templates, "templates/*.html"))
 	t.ExecuteTemplate(writer, "name.html", map[string]interface{}{
@@ -53,7 +54,7 @@ func SimpleHtmlAction(writer http.ResponseWriter, request *http.Request) {
 	t := template.Must(template.ParseFiles("./templates/comparator.html"))
 	t.ExecuteTemplate(writer, "comparator.html", map[string]interface{}{
 		"first": 9,
-		"text": "haha",
+		"text":  "haha",
 	})
 }
 
@@ -62,14 +63,41 @@ func SimpleHtmlIteration(writer http.ResponseWriter, request *http.Request) {
 	t.ExecuteTemplate(writer, "iterator.html", map[string]interface{}{
 		"Users": []map[string]interface{}{
 			{
-				"Name": "Lorem",
+				"Name":  "Lorem",
 				"Hobby": "Ping",
 			},
 			{
-				"Name": "Ipsum",
+				"Name":  "Ipsum",
 				"Hobby": "Pong",
 			},
 		},
+	})
+}
+
+func TemplateLayout(writer http.ResponseWriter, request *http.Request) {
+	t := template.Must(template.ParseFiles("./templates/layout.gohtml", "./templates/header.gohtml", "./templates/footer.gohtml"))
+	t.ExecuteTemplate(writer, "layout", map[string]interface{}{
+		"users": map[string]interface{}{
+			"name": "Francisco",
+			"age":  "20",
+		},
+	})
+}
+
+func TemplateFunc(writer http.ResponseWriter, request *http.Request) {
+	t := template.New("Func")
+	t.Funcs(map[string]interface{}{
+		"hello": func(name string) string {
+			return "Hello " + name
+		},
+		"upper": func(str string) string {
+			return strings.ToUpper(str)
+		},
+	})
+
+	t = template.Must(t.Parse(`{{hello .name | upper | len}}`))
+	t.ExecuteTemplate(writer, "Func", map[string]interface{}{
+		"name": "Francisco",
 	})
 }
 
@@ -77,7 +105,7 @@ func TestSimpleHtml(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "http://localhost:8080", nil)
 	recorder := httptest.NewRecorder()
 
-	SimpleHtmlEmbed(recorder, request)
+	TemplateFunc(recorder, request)
 
 	body, _ := io.ReadAll(recorder.Result().Body)
 	fmt.Println(string(body))
@@ -85,10 +113,10 @@ func TestSimpleHtml(t *testing.T) {
 
 func TestServerTemplate(t *testing.T) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", SimpleHtmlIteration)
+	mux.HandleFunc("/", TemplateLayout)
 
 	server := http.Server{
-		Addr: "localhost:8080",
+		Addr:    "localhost:8080",
 		Handler: mux,
 	}
 
